@@ -1,5 +1,5 @@
 module.exports = {
-    getCacheVersion: () => "2.31.0.0",   // 更新文件夹
+    getCacheVersion: () => "2.31.0.0",
     extractGameDir: (logContent) => {
         const match = logContent.match(/([A-Z]:\\.+?\\(GenshinImpact_Data|YuanShen_Data))/);
         return match ? match[1] : null;
