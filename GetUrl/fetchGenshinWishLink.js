@@ -1,6 +1,15 @@
 module.exports = {
-    getCacheVersion: () => "2.31.0.0", // 动态更新版本
-    extractGachaLogUrl: function (cachePath) {
+    // 更新缓存文件版本
+    getCacheVersion: () => "2.31.0.0",
+
+    // 从日志文件中提取游戏路径
+    extractGameDir: (logContent) => {
+        const match = logContent.match(/([A-Z]:\\.+?\\(GenshinImpact_Data|YuanShen_Data))/);
+        return match ? match[1] : null;
+    },
+
+    // 从缓存文件中提取祈愿记录链接
+    extractGachaLogUrl: (cachePath) => {
         const fs = require("fs");
         const url = require("url");
 
@@ -16,7 +25,9 @@ module.exports = {
         }
         return null;
     },
-    simplifyUrl: function (rawUrl) {
+
+    simplifyUrl: (rawUrl) => {
+        const url = require("url");
         const parsed = url.parse(rawUrl, true);
         const allowedKeys = ["authkey", "authkey_ver", "sign_type", "game_biz", "lang"];
         const filteredQuery = Object.keys(parsed.query)
@@ -25,8 +36,6 @@ module.exports = {
                 obj[key] = parsed.query[key];
                 return obj;
             }, {});
-        return `${parsed.protocol}//${parsed.host}${parsed.pathname}?${new url.URLSearchParams(
-            filteredQuery
-        )}`;
+        return `${parsed.protocol}//${parsed.host}${parsed.pathname}?${new url.URLSearchParams(filteredQuery)}`;
     },
 };
