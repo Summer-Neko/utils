@@ -12,9 +12,9 @@
   "source_url": "https://test.com",
   "history": {
     "3.9": {
-      "start_date": "2023-06-01",
-      "end_date": "2023-07-31",
-      "currency": 12800,
+      "start_date": "2023-07-01",
+      "end_date": "2023-04-31",
+      "currency": 14800,
       "sources": {
         "每日任务": 3500,
         "活动奖励": 4500,
@@ -24,7 +24,7 @@
     "3.8": {
       "start_date": "2023-06-01",
       "end_date": "2023-07-31",
-      "currency": 12800,
+      "currency": 14800,
       "sources": {
         "每日任务": 3500,
         "活动奖励": 4500,
