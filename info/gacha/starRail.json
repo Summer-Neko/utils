@@ -1,0 +1,50 @@
+{
+  "name": "崩坏:星穹铁道",
+  "version": "4.0",
+  "start_date": "2024-08-01",
+  "end_date": "2024-09-15",
+  "currency": 12800,
+  "sources": {
+    "每日任务": 4000,
+    "活动奖励": 5000,
+    "邮件奖励": 3800
+  },
+  "source_url": "https://test.com",
+  "history": {
+    "4.0": {
+      "start_date": "2023-10-01",
+      "end_date": "2023-07-31",
+      "currency": 19800,
+      "source_url": "https://zhongli.com",
+      "sources": {
+        "每日任务": 3500,
+        "活动奖励": 4500,
+        "邮件奖励": 3000,
+        "其他奖励": 3000
+      }
+    },
+    "3.9": {
+      "start_date": "2023-07-01",
+      "end_date": "2023-04-31",
+      "currency": 14800,
+      "source_url": "https://example.com",
+      "sources": {
+        "每日任务": 3500,
+        "活动奖励": 4500,
+        "邮件奖励": 3000
+      }
+    },
+    "3.8": {
+      "start_date": "2023-06-01",
+      "end_date": "2023-07-31",
+      "currency": 14800,
+      "source_url": "https://apple.com",
+      "sources": {
+        "每日任务": 3500,
+        "活动奖励": 4500,
+        "邮件奖励": 3000,
+        "其他奖励": 3000
+      }
+    }
+  }
+}
