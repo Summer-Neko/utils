@@ -1,47 +1,43 @@
 {
   "name": "原神",
   "history": {
-    "4.0": {
-      "start_date": "2023-10-01",
-      "end_date": "2023-07-31",
-      "currency": 19800,
-      "currencyS": 21800,
-      "currencyL": 22800,
-      "source_url": "https://zhongli.com",
+    "5.3": {
+      "start_date": "2024-01-01",
+      "end_date": "2025-02-12  42天",
+      "currency": 14270,
+      "currencyS": 18050,
+      "currencyL": 19370,
+      "source_url": "https://www.bilibili.com/video/BV1fuCTYwEsV/?spm_id_from=333.788.videopod.sections&vd_source=3dfb94e68bd7ff5a0fdb41568cda0d49",
       "sources": {
-        "每日任务": 3500,
-        "活动奖励": 4500,
-        "邮件奖励": 3000,
-        "其他奖励": 3000
+        "每日委托": 2520,
+        "新旧深渊": 1600,
+        "小月卡": 3780,
+        "大月卡": 1320,
+        "版本活动": 2260,
+        "新任务": 990,
+        "地图探索": 2100,
+        "富贵登门": 3200,
+        "星尘商店": 1600,
+        "其他限时奖励": 1160
       }
     },
-    "3.9": {
-      "start_date": "2023-07-01",
-      "end_date": "2023-04-31",
-      "currency": 19800,
-      "currencyS": 21800,
-      "currencyL": 22800,
-      "source_url": "https://example.com",
+    "5.2": {
+      "start_date": "2024-11-20",
+      "end_date": "2025-01-01  42天",
+      "currency": 11410,
+      "currencyS": 15190,
+      "currencyL": 16510,
+      "source_url": "https://www.bilibili.com/video/BV1xeDrYbEy1/?spm_id_from=333.337.search-card.all.click&vd_source=3dfb94e68bd7ff5a0fdb41568cda0d49",
       "sources": {
-        "每日任务": 3500,
-        "活动奖励": 4500,
-        "邮件奖励": 3000
-      }
-    },
-    "3.8": {
-      "start_date": "2023-06-01",
-      "end_date": "2023-07-31",
-      "currency": 19800,
-      "currencyS": 21800,
-      "currencyL": 22800,
-      "source_url": "https://apple.com",
-      "sources": {
-        "每日任务": 3500,
-        "活动奖励": 4500,
-        "邮件奖励": 3000,
-        "其他奖励": 3000
+        "每日委托": 2520,
+        "新旧深渊": 1600,
+        "小月卡": 3780,
+        "大月卡": 1320,
+        "版本活动": 2260,
+        "新任务": 550,
+        "地图探索": 2100,
+        "其他限时奖励": 1140
       }
     }
   }
 }
-
