@@ -15,8 +15,8 @@
       "start_date": "2023-10-01",
       "end_date": "2023-07-31",
       "currency": 19800,
-      "currency-s": 21800,
-      "currency-l": 22800,
+      "currencyS": 21800,
+      "currencyL": 22800,
       "source_url": "https://zhongli.com",
       "sources": {
         "每日任务": 3500,
@@ -29,8 +29,8 @@
       "start_date": "2023-07-01",
       "end_date": "2023-04-31",
       "currency": 19800,
-      "currency-s": 21800,
-      "currency-l": 22800,
+      "currencyS": 21800,
+      "currencyL": 22800,
       "source_url": "https://example.com",
       "sources": {
         "每日任务": 3500,
@@ -42,8 +42,8 @@
       "start_date": "2023-06-01",
       "end_date": "2023-07-31",
       "currency": 12800,
-      "currency-s": 21800,
-      "currency-l": 22800,
+      "currencyS": 21800,
+      "currencyL": 22800,
       "source_url": "https://apple.com",
       "sources": {
         "每日任务": 3500,
