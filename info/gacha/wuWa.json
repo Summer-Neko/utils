@@ -1,0 +1,56 @@
+{
+  "name": "鸣潮",
+  "history": {
+    "2.0": {
+      "start_date": "2025-01-02",
+      "end_date": "2025-02-13  42天",
+      "currency": 25001,
+      "currencyS": 28781,
+      "currencyL": 30261,
+      "source_url": "https://www.bilibili.com/video/BV1HHmyYWEuv/?spm_id_from=333.337.search-card.all.click&vd_source=3dfb94e68bd7ff5a0fdb41568cda0d49",
+      "sources": {
+        "每日任务": 2520,
+        "深塔奖励": 2100,
+        "版本活动": 5480,
+        "小月卡": 3780,
+        "大月卡":  1480,
+        "新任务": 1170,
+        "大地图探索": 7631,
+        "庆典余音": 1600,
+        "登录奖励": 1600,
+        "商店兑换": 2240,
+        "其他奖励": 980
+      }
+    },
+    "1.4": {
+      "start_date": "2024-11-14",
+      "end_date": "2025-01-02  48天",
+      "currency": 12640,
+      "currencyS": 16480,
+      "currencyL": 17920,
+      "source_url": "https://www.bilibili.com/video/BV1HHmyYWEuv/?spm_id_from=333.337.search-card.all.click&vd_source=3dfb94e68bd7ff5a0fdb41568cda0d49",
+      "sources": {
+        "每日任务": 2880,
+        "版本相关": 4440,
+        "深塔奖励": 2100,
+        "月相观测": 4320,
+        "其他奖励": 3000
+      }
+    },
+    "1.3": {
+      "start_date": "2024-09-28",
+      "end_date": "2023-11-13  44天",
+      "currency": 12640,
+      "currencyS": 16690,
+      "currencyL": 18170,
+      "source_url": "https://www.bilibili.com/video/BV1TzxFeqEoK/?spm_id_from=333.337.search-card.all.click&vd_source=3dfb94e68bd7ff5a0fdb41568cda0d49",
+      "sources": {
+        "每日任务": 2640,
+        "版本相关": 2300,
+        "月相观测": 3960,
+        "版本任务": 2800,
+        "其他奖励": 6000
+      }
+    }
+  }
+}
