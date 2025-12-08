@@ -1,4 +1,8 @@
-[Console]::OutputEncoding = [System.Text.Encoding]::Default
+try {
+    [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding(936)
+} catch {
+
+}
 
 Write-Host "=== 开始检测原神路径与缓存文件 ==="
 
@@ -21,6 +25,7 @@ function Get-LogPath {
         return $chinaPath
     }
     else {
+        Write-Host "[错误] 未找到 output_log.txt，请确认原神至少启动过一次。" -ForegroundColor Yellow
         return $null
     }
 }
@@ -38,7 +43,7 @@ function Extract-GameDir($logContent) {
         return $path
     }
 
-    Write-Host "[错误] 无法解析游戏路径"
+    Write-Host "[错误] 无法从日志中解析游戏路径。" -ForegroundColor Yellow
     return $null
 }
 
@@ -50,7 +55,7 @@ function Get-LatestCacheVersion($gameDir) {
     Write-Host "[检查] webCaches 路径: $webCaches"
 
     if (!(Test-Path $webCaches)) {
-        throw "未找到 webCaches 目录，请确认游戏是否启动过。"
+        throw "未找到 webCaches 目录，请确认游戏是否启动过并打开过祈愿界面。"
     }
 
     $dirs = Get-ChildItem $webCaches -Directory | Sort-Object LastWriteTime -Descending
@@ -70,13 +75,12 @@ function Extract-GachaLogUrl($cacheFile) {
     Write-Host "[读取缓存] $cacheFile"
 
     if (!(Test-Path $cacheFile)) {
-        throw "缓存文件不存在。"
+        throw "缓存文件不存在：$cacheFile"
     }
 
     # 保持原逻辑：按字节读，然后用 ISO-8859-1 解码
-    $content = Get-Content $cacheFile -Encoding Byte -Raw | ForEach-Object {
-        [System.Text.Encoding]::GetEncoding("ISO-8859-1").GetString($_)
-    }
+    $bytes = Get-Content $cacheFile -Encoding Byte -Raw
+    $content = [System.Text.Encoding]::GetEncoding("ISO-8859-1").GetString($bytes)
 
     $regex = "https:\/\/.+?&auth_appid=webview_gacha&.+?authkey=.+?&game_biz=hk4e_(cn|global|os)"
     $match = [regex]::Matches($content, $regex) | Select-Object -Last 1
@@ -90,41 +94,53 @@ function Extract-GachaLogUrl($cacheFile) {
 }
 
 # --------------------------
-# 主流程
+# 主流程（加异常捕获 & 防闪退）
 # --------------------------
+try {
+    $logPath = Get-LogPath
+    if (-not $logPath) {
+        Write-Host "`n[终止] 因为未找到日志文件，脚本结束。" -ForegroundColor Red
+        return
+    }
 
-$logPath = Get-LogPath
-if (!$logPath) {
-    Write-Host "`n[错误] 未找到原神日志文件，请确认游戏是否启动过。" -ForegroundColor Red
-    goto EndScript
+    # 尽量用系统默认编码读取（通常是 GBK/ANSI）
+    $logContent = Get-Content -LiteralPath $logPath -Raw -Encoding Default
+    $gameDir = Extract-GameDir $logContent
+    if (-not $gameDir) {
+        Write-Host "`n[终止] 无法解析游戏目录，脚本结束。" -ForegroundColor Red
+        return
+    }
+
+    $cacheVer = Get-LatestCacheVersion $gameDir
+
+    $cacheFile = Join-Path $gameDir "webCaches\$cacheVer\Cache\Cache_Data\data_2"
+    Write-Host "[最终缓存文件路径] $cacheFile"
+
+    if (!(Test-Path $cacheFile)) {
+        Write-Host "`n[错误] 未找到缓存文件: $cacheFile" -ForegroundColor Red
+        return
+    }
+
+    $url = Extract-GachaLogUrl $cacheFile
+
+    if ($url) {
+        Set-Clipboard -Value $url
+        Write-Host "`n==== 成功 ====" -ForegroundColor Green
+        Write-Host "祈愿链接已复制到剪贴板：" 
+        Write-Host $url -ForegroundColor Cyan
+    }
+    else {
+        Write-Host "`n[错误] 未在缓存中找到祈愿记录链接，请确认已打开祈愿记录页面。" -ForegroundColor Red
+    }
 }
-
-$logContent = Get-Content $logPath -Raw -Encoding Default
-$gameDir = Extract-GameDir $logContent
-if (!$gameDir) { goto EndScript }
-
-$cacheVer = Get-LatestCacheVersion $gameDir
-
-$cacheFile = Join-Path $gameDir "webCaches\$cacheVer\Cache\Cache_Data\data_2"
-Write-Host "[最终缓存文件路径] $cacheFile"
-
-if (!(Test-Path $cacheFile)) {
-    Write-Host "`n[错误] 未找到缓存文件: $cacheFile" -ForegroundColor Red
-    goto EndScript
+catch {
+    Write-Host "`n[异常] $($_.Exception.Message)" -ForegroundColor Red
 }
-
-$url = Extract-GachaLogUrl($cacheFile)
-
-if ($url) {
-    Set-Clipboard -Value $url
-    Write-Host "`n==== 成功 ====" -ForegroundColor Green
-    Write-Host "祈愿链接已复制到剪贴板：" 
-    Write-Host $url -ForegroundColor Cyan
+finally {
+    Write-Host "`n脚本执行完毕，按任意键退出..."
+    try {
+        $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+    } catch {
+        # 在某些宿主环境（比如 VSCode 终端）可能不支持 ReadKey，忽略即可
+    }
 }
-else {
-    Write-Host "`n[错误] 未找到祈愿记录链接，请确认已打开祈愿记录页面。" -ForegroundColor Red
-}
-
-:EndScript
-Write-Host "`n脚本执行完毕，按任意键退出..."
-$null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
