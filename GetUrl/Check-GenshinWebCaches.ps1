@@ -1,3 +1,5 @@
+[Console]::OutputEncoding = [System.Text.Encoding]::Default
+
 Write-Host "=== 开始检测原神路径与缓存文件 ==="
 
 # --------------------------
@@ -71,7 +73,10 @@ function Extract-GachaLogUrl($cacheFile) {
         throw "缓存文件不存在。"
     }
 
-    $content = Get-Content $cacheFile -Encoding Byte -Raw | ForEach-Object { [System.Text.Encoding]::GetEncoding("ISO-8859-1").GetString($_) }
+    # 保持原逻辑：按字节读，然后用 ISO-8859-1 解码
+    $content = Get-Content $cacheFile -Encoding Byte -Raw | ForEach-Object {
+        [System.Text.Encoding]::GetEncoding("ISO-8859-1").GetString($_)
+    }
 
     $regex = "https:\/\/.+?&auth_appid=webview_gacha&.+?authkey=.+?&game_biz=hk4e_(cn|global|os)"
     $match = [regex]::Matches($content, $regex) | Select-Object -Last 1
@@ -91,12 +96,12 @@ function Extract-GachaLogUrl($cacheFile) {
 $logPath = Get-LogPath
 if (!$logPath) {
     Write-Host "`n[错误] 未找到原神日志文件，请确认游戏是否启动过。" -ForegroundColor Red
-    exit
+    goto EndScript
 }
 
-$logContent = Get-Content $logPath -Raw -Encoding UTF8
+$logContent = Get-Content $logPath -Raw -Encoding Default
 $gameDir = Extract-GameDir $logContent
-if (!$gameDir) { exit }
+if (!$gameDir) { goto EndScript }
 
 $cacheVer = Get-LatestCacheVersion $gameDir
 
@@ -105,10 +110,10 @@ Write-Host "[最终缓存文件路径] $cacheFile"
 
 if (!(Test-Path $cacheFile)) {
     Write-Host "`n[错误] 未找到缓存文件: $cacheFile" -ForegroundColor Red
-    exit
+    goto EndScript
 }
 
-$url = Extract-GachaLogUrl $cacheFile
+$url = Extract-GachaLogUrl($cacheFile)
 
 if ($url) {
     Set-Clipboard -Value $url
@@ -120,4 +125,6 @@ else {
     Write-Host "`n[错误] 未找到祈愿记录链接，请确认已打开祈愿记录页面。" -ForegroundColor Red
 }
 
-Write-Host "`n=== 完成 ==="
+:EndScript
+Write-Host "`n脚本执行完毕，按任意键退出..."
+$null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
