@@ -1,146 +1,171 @@
-try {
-    [System.Console]::OutputEncoding = [System.Console]::InputEncoding = [System.Text.Encoding]::UTF8
-} catch {
-
-}
-
-Write-Host "=== 开始检测原神路径与缓存文件 ==="
-
-# --------------------------
-# 1. 获取日志路径
-# --------------------------
 function Get-LogPath {
     $base = Join-Path $env:USERPROFILE "AppData\LocalLow\miHoYo"
+
     $globalPath = Join-Path $base "Genshin Impact\output_log.txt"
     $chinaPath  = Join-Path $base "原神\output_log.txt"
 
-    Write-Host "[检查路径] 基础路径: $base"
+    # "[检查路径] 基础路径:"
+    $msgCheckBase = "$([char]0x5b)$([char]0x68c0)$([char]0x67e5)$([char]0x8def)$([char]0x5f84)$([char]0x5d) $([char]0x57fa)$([char]0x7840)$([char]0x8def)$([char]0x5f84):"
+    Write-Host "$msgCheckBase $base"
 
     if (Test-Path $globalPath) {
-        Write-Host "[找到日志] 国际服日志: $globalPath"
+        # "[找到日志] 国际服日志:"
+        $msg = "$([char]0x5b)$([char]0x627e)$([char]0x5230)$([char]0x65e5)$([char]0x5fd7)$([char]0x5d) $([char]0x56fd)$([char]0x9645)$([char]0x670d)$([char]0x65e5)$([char]0x5fd7):"
+        Write-Host "$msg $globalPath"
         return $globalPath
     }
     elseif (Test-Path $chinaPath) {
-        Write-Host "[找到日志] 国服日志: $chinaPath"
+        # "[找到日志] 国服日志:"
+        $msg = "$([char]0x5b)$([char]0x627e)$([char]0x5230)$([char]0x65e5)$([char]0x5fd7)$([char]0x5d) $([char]0x56fd)$([char]0x670d)$([char]0x65e5)$([char]0x5fd7):"
+        Write-Host "$msg $chinaPath"
         return $chinaPath
     }
     else {
-        Write-Host "[错误] 未找到 output_log.txt，请确认原神至少启动过一次。" -ForegroundColor Yellow
+        # "[错误] 未找到日志文件"
+        $msg = "$([char]0x5b)$([char]0x9519)$([char]0x8bef)$([char]0x5d) $([char]0x672a)$([char]0x627e)$([char]0x5230)$([char]0x65e5)$([char]0x5fd7)$([char]0x6587)$([char]0x4ef6)"
+        Write-Host $msg -ForegroundColor Yellow
         return $null
     }
 }
 
-# --------------------------
-# 2. 从日志解析游戏目录
-# --------------------------
-function Extract-GameDir($logContent) {
+function Extract-GameDir {
+    param([string]$logContent)
+
     $regex = "([A-Z]:\\.+?\\(GenshinImpact_Data|YuanShen_Data))"
     $match = [regex]::Match($logContent, $regex)
 
     if ($match.Success) {
         $path = $match.Groups[1].Value
-        Write-Host "[解析路径] 游戏目录为: $path"
+        # "[解析路径] 游戏目录为:"
+        $msg = "$([char]0x5b)$([char]0x89e3)$([char]0x6790)$([char]0x8def)$([char]0x5f84)$([char]0x5d) $([char]0x6e38)$([char]0x620f)$([char]0x76ee)$([char]0x5f55)$([char]0x4e3a):"
+        Write-Host "$msg $path"
         return $path
     }
 
-    Write-Host "[错误] 无法从日志中解析游戏路径。" -ForegroundColor Yellow
+    # "无法解析游戏路径"
+    $msgErr = "$([char]0x65e0)$([char]0x6cd5)$([char]0x89e3)$([char]0x6790)$([char]0x6e38)$([char]0x620f)$([char]0x8def)$([char]0x5f84)"
+    Write-Host "$([char]0x5b)$([char]0x9519)$([char]0x8bef)$([char]0x5d) $msgErr" -ForegroundColor Yellow
     return $null
 }
 
-# --------------------------
-# 3. 获取最新版本 webCaches
-# --------------------------
-function Get-LatestCacheVersion($gameDir) {
+function Get-LatestCacheVersion {
+    param([string]$gameDir)
+
     $webCaches = Join-Path $gameDir "webCaches"
-    Write-Host "[检查] webCaches 路径: $webCaches"
+    # "[检查] webCaches 路径:"
+    $msg = "$([char]0x5b)$([char]0x68c0)$([char]0x67e5)$([char]0x5d) webCaches $([char]0x8def)$([char]0x5f84):"
+    Write-Host "$msg $webCaches"
 
     if (!(Test-Path $webCaches)) {
-        throw "未找到 webCaches 目录，请确认游戏是否启动过并打开过祈愿界面。"
+        # "未找到 webCaches 目录"
+        $msgErr = "$([char]0x672a)$([char]0x627e)$([char]0x5230) webCaches $([char]0x76ee)$([char]0x5f55)"
+        throw $msgErr
     }
 
     $dirs = Get-ChildItem $webCaches -Directory | Sort-Object LastWriteTime -Descending
 
     if ($dirs.Count -eq 0) {
-        throw "webCaches 中未找到任何版本文件夹。"
+        # "webCaches 中无版本文件夹"
+        $msgErr = "webCaches $([char]0x4e2d)$([char]0x65e0)$([char]0x7248)$([char]0x672c)$([char]0x6587)$([char]0x4ef6)$([char]0x5939)"
+        throw $msgErr
     }
 
-    Write-Host "[版本] 最新缓存版本为: $($dirs[0].Name)"
+    # "[版本] 最新缓存版本为:"
+    $msgVer = "$([char]0x5b)$([char]0x7248)$([char]0x672c)$([char]0x5d) $([char]0x6700)$([char]0x65b0)$([char]0x7f13)$([char]0x5b58)$([char]0x7248)$([char]0x672c)$([char]0x4e3a):"
+    Write-Host "$msgVer $($dirs[0].Name)"
+
     return $dirs[0].Name
 }
 
-# --------------------------
-# 4. 从缓存文件中提取祈愿链接
-# --------------------------
-function Extract-GachaLogUrl($cacheFile) {
-    Write-Host "[读取缓存] $cacheFile"
+function Extract-GachaLogUrl {
+    param([string]$cacheFile)
+
+    # "[读取缓存]"
+    $msg = "$([char]0x5b)$([char]0x8bfb)$([char]0x53d6)$([char]0x7f13)$([char]0x5b58)$([char]0x5d)"
+    Write-Host "$msg $cacheFile"
 
     if (!(Test-Path $cacheFile)) {
-        throw "缓存文件不存在：$cacheFile"
+        # "未找到缓存文件"
+        $msgErr = "$([char]0x672a)$([char]0x627e)$([char]0x5230)$([char]0x7f13)$([char]0x5b58)$([char]0x6587)$([char]0x4ef6)"
+        throw $msgErr
     }
 
-    # 保持原逻辑：按字节读，然后用 ISO-8859-1 解码
-    $bytes = Get-Content $cacheFile -Encoding Byte -Raw
+    $bytes   = Get-Content -LiteralPath $cacheFile -Encoding Byte -Raw
     $content = [System.Text.Encoding]::GetEncoding("ISO-8859-1").GetString($bytes)
 
     $regex = "https:\/\/.+?&auth_appid=webview_gacha&.+?authkey=.+?&game_biz=hk4e_(cn|global|os)"
     $match = [regex]::Matches($content, $regex) | Select-Object -Last 1
 
     if ($match) {
-        Write-Host "[找到链接] $($match.Value)"
+        # "[找到祈愿链接]"
+        $msgFound = "$([char]0x5b)$([char]0x627e)$([char]0x5230)$([char]0x7948)$([char]0x613f)$([char]0x94fe)$([char]0x63a5)$([char]0x5d)"
+        Write-Host "$msgFound $($match.Value)"
         return $match.Value
     }
 
+    # "未找到祈愿链接"
+    $msgNot = "$([char]0x672a)$([char]0x627e)$([char]0x5230)$([char]0x7948)$([char]0x613f)$([char]0x94fe)$([char]0x63a5)"
+    Write-Host "$([char]0x5b)$([char]0x9519)$([char]0x8bef)$([char]0x5d) $msgNot" -ForegroundColor Yellow
     return $null
 }
 
-# --------------------------
-# 主流程（加异常捕获 & 防闪退）
-# --------------------------
+# ===== 主流程 =====
+
+# "=== 开始检测原神路径与缓存文件 ==="
+$msgTitle = "=== $([char]0x5f00)$([char]0x59cb)$([char]0x68c0)$([char]0x6d4b)$([char]0x539f)$([char]0x795e)$([char]0x8def)$([char]0x5f84)$([char]0x4e0e)$([char]0x7f13)$([char]0x5b58)$([char]0x6587)$([char]0x4ef6) ==="
+Write-Host $msgTitle
+
 try {
     $logPath = Get-LogPath
     if (-not $logPath) {
-        Write-Host "`n[终止] 因为未找到日志文件，脚本结束。" -ForegroundColor Red
+        # "[终止] 脚本结束"
+        $msg = "$([char]0x5b)$([char]0x7ec8)$([char]0x6b62)$([char]0x5d) $([char]0x811a)$([char]0x672c)$([char]0x7ed3)$([char]0x675f)"
+        Write-Host $msg -ForegroundColor Red
         return
     }
 
-    # 尽量用系统默认编码读取（通常是 GBK/ANSI）
+    # 日志用默认编码读取（避免强行 UTF-8）
     $logContent = Get-Content -LiteralPath $logPath -Raw -Encoding Default
-    $gameDir = Extract-GameDir $logContent
+    $gameDir    = Extract-GameDir $logContent
     if (-not $gameDir) {
-        Write-Host "`n[终止] 无法解析游戏目录，脚本结束。" -ForegroundColor Red
+        $msg = "$([char]0x5b)$([char]0x7ec8)$([char]0x6b62)$([char]0x5d) $([char]0x811a)$([char]0x672c)$([char]0x7ed3)$([char]0x675f)"
+        Write-Host $msg -ForegroundColor Red
         return
     }
 
-    $cacheVer = Get-LatestCacheVersion $gameDir
-
+    $cacheVer  = Get-LatestCacheVersion $gameDir
     $cacheFile = Join-Path $gameDir "webCaches\$cacheVer\Cache\Cache_Data\data_2"
-    Write-Host "[最终缓存文件路径] $cacheFile"
+
+    # "[最终缓存文件路径]"
+    $msgFinal = "$([char]0x5b)$([char]0x6700)$([char]0x7ec8)$([char]0x7f13)$([char]0x5b58)$([char]0x6587)$([char]0x4ef6)$([char]0x8def)$([char]0x5f84)$([char]0x5d)"
+    Write-Host "$msgFinal $cacheFile"
 
     if (!(Test-Path $cacheFile)) {
-        Write-Host "`n[错误] 未找到缓存文件: $cacheFile" -ForegroundColor Red
+        # "[错误] 未找到缓存文件:"
+        $msgErr = "$([char]0x5b)$([char]0x9519)$([char]0x8bef)$([char]0x5d) $([char]0x672a)$([char]0x627e)$([char]0x5230)$([char]0x7f13)$([char]0x5b58)$([char]0x6587)$([char]0x4ef6):"
+        Write-Host "$msgErr $cacheFile" -ForegroundColor Red
         return
     }
 
     $url = Extract-GachaLogUrl $cacheFile
-
     if ($url) {
         Set-Clipboard -Value $url
-        Write-Host "`n==== 成功 ====" -ForegroundColor Green
-        Write-Host "祈愿链接已复制到剪贴板：" 
-        Write-Host $url -ForegroundColor Cyan
-    }
-    else {
-        Write-Host "`n[错误] 未在缓存中找到祈愿记录链接，请确认已打开祈愿记录页面。" -ForegroundColor Red
+        # "==== 成功 ===="
+        $msgOk = "$([char]0x3d)$([char]0x3d)$([char]0x3d)$([char]0x3d) $([char]0x6210)$([char]0x529f) $([char]0x3d)$([char]0x3d)$([char]0x3d)$([char]0x3d)"
+        Write-Host $msgOk -ForegroundColor Green
+
+        # "祈愿链接已复制到剪贴板："
+        $msgCopy = "$([char]0x7948)$([char]0x613f)$([char]0x94fe)$([char]0x63a5)$([char]0x5df2)$([char]0x590d)$([char]0x5236)$([char]0x5230)$([char]0x526a)$([char]0x8d34)$([char]0x677f)$([char]0xff1a)"
+        Write-Host $msgCopy
+        Write-Host $url
     }
 }
 catch {
-    Write-Host "`n[异常] $($_.Exception.Message)" -ForegroundColor Red
+    $errMsg = $_.Exception.Message
+    $prefix = "$([char]0x5b)$([char]0x9519)$([char]0x8bef)$([char]0x5d)"
+    Write-Host "$prefix $errMsg" -ForegroundColor Red
 }
-finally {
-    Write-Host "`n脚本执行完毕，按任意键退出..."
-    try {
-        $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
-    } catch {
-        # 在某些宿主环境（比如 VSCode 终端）可能不支持 ReadKey，忽略即可
-    }
-}
+
+# $endMsg = "$([char]0x811a)$([char]0x672c)$([char]0x6267)$([char]0x884c)$([char]0x5b8c)$([char]0x6bd5)$([char]0xff0c)$([char]0x6309)$([char]0x4efb)$([char]0x610f)$([char]0x952e)$([char]0x9000)$([char]0x51fa)$([char]0x2e)$([char]0x2e)$([char]0x2e)"
+# Write-Host $endMsg
+# $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
