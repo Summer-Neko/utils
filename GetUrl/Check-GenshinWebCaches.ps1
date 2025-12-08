@@ -2,7 +2,8 @@ function Get-LogPath {
     $base = Join-Path $env:USERPROFILE "AppData\LocalLow\miHoYo"
 
     $globalPath = Join-Path $base "Genshin Impact\output_log.txt"
-    $chinaPath  = Join-Path $base "原神\output_log.txt"
+    $chinaFolder = "$([char]0x539f)$([char]0x795e)"
+    $chinaPath   = Join-Path $base "$chinaFolder\output_log.txt"
 
     # "[检查路径] 基础路径:"
     $msgCheckBase = "$([char]0x5b)$([char]0x68c0)$([char]0x67e5)$([char]0x8def)$([char]0x5f84)$([char]0x5d) $([char]0x57fa)$([char]0x7840)$([char]0x8def)$([char]0x5f84):"
