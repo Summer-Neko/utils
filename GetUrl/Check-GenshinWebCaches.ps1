@@ -1,7 +1,3 @@
-# Check-GenshinWebCaches.ps1
-# 原神路径问题诊断脚本（纯路径输出）
-
-# 中文提示使用 Unicode 字符避免编码冲突
 function Write-CH {
     param([string]$Text, [ConsoleColor]$Color = "White")
     Write-Host $Text -ForegroundColor $Color
@@ -59,7 +55,7 @@ function Get-LatestWebCachesFolder {
     return $subdirs[0]
 }
 
-Write-CH "=== 原神路径诊断脚本（无乱码版） ===`n" Green
+Write-CH "=== 原神路径诊断脚本 ===`n" Green
 
 try {
     # 1. 日志路径
