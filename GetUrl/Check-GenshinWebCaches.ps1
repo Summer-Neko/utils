@@ -1,5 +1,5 @@
 try {
-    [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding(936)
+    [System.Console]::OutputEncoding = [System.Console]::InputEncoding = [System.Text.Encoding]::UTF8
 } catch {
 
 }
