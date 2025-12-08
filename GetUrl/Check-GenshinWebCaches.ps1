@@ -1,88 +1,123 @@
-function Write-CH {
-    param([string]$Text, [ConsoleColor]$Color = "White")
-    Write-Host $Text -ForegroundColor $Color
-}
+Write-Host "=== 开始检测原神路径与缓存文件 ==="
 
+# --------------------------
+# 1. 获取日志路径
+# --------------------------
 function Get-LogPath {
-    $basePath   = Join-Path $env:USERPROFILE 'AppData\LocalLow\miHoYo'
-    $globalPath = Join-Path $basePath 'Genshin Impact\output_log.txt'
-    $chinaPath  = Join-Path $basePath '原神\output_log.txt'
+    $base = Join-Path $env:USERPROFILE "AppData\LocalLow\miHoYo"
+    $globalPath = Join-Path $base "Genshin Impact\output_log.txt"
+    $chinaPath  = Join-Path $base "原神\output_log.txt"
 
-    if (Test-Path $globalPath) { return $globalPath }
-    if (Test-Path $chinaPath)  { return $chinaPath }
+    Write-Host "[检查路径] 基础路径: $base"
 
-    Write-CH "未找到原神日志文件：$basePath" Yellow
+    if (Test-Path $globalPath) {
+        Write-Host "[找到日志] 国际服日志: $globalPath"
+        return $globalPath
+    }
+    elseif (Test-Path $chinaPath) {
+        Write-Host "[找到日志] 国服日志: $chinaPath"
+        return $chinaPath
+    }
+    else {
+        return $null
+    }
+}
+
+# --------------------------
+# 2. 从日志解析游戏目录
+# --------------------------
+function Extract-GameDir($logContent) {
+    $regex = "([A-Z]:\\.+?\\(GenshinImpact_Data|YuanShen_Data))"
+    $match = [regex]::Match($logContent, $regex)
+
+    if ($match.Success) {
+        $path = $match.Groups[1].Value
+        Write-Host "[解析路径] 游戏目录为: $path"
+        return $path
+    }
+
+    Write-Host "[错误] 无法解析游戏路径"
     return $null
 }
 
-function Get-GameDirFromLog {
-    param([string]$LogPath)
+# --------------------------
+# 3. 获取最新版本 webCaches
+# --------------------------
+function Get-LatestCacheVersion($gameDir) {
+    $webCaches = Join-Path $gameDir "webCaches"
+    Write-Host "[检查] webCaches 路径: $webCaches"
 
-    if (-not (Test-Path $LogPath)) {
-        Write-CH "日志文件不存在：$LogPath" Yellow
-        return $null
+    if (!(Test-Path $webCaches)) {
+        throw "未找到 webCaches 目录，请确认游戏是否启动过。"
     }
 
-    $content = Get-Content $LogPath -Raw -ErrorAction Stop
-    $regex   = [regex]'([A-Z]:\\.+?\\(GenshinImpact_Data|YuanShen_Data))'
-    $match   = $regex.Match($content)
+    $dirs = Get-ChildItem $webCaches -Directory | Sort-Object LastWriteTime -Descending
 
-    if ($match.Success) { return $match.Groups[1].Value }
+    if ($dirs.Count -eq 0) {
+        throw "webCaches 中未找到任何版本文件夹。"
+    }
 
-    Write-CH "无法从日志文件解析游戏目录，请检查 output_log.txt" Yellow
+    Write-Host "[版本] 最新缓存版本为: $($dirs[0].Name)"
+    return $dirs[0].Name
+}
+
+# --------------------------
+# 4. 从缓存文件中提取祈愿链接
+# --------------------------
+function Extract-GachaLogUrl($cacheFile) {
+    Write-Host "[读取缓存] $cacheFile"
+
+    if (!(Test-Path $cacheFile)) {
+        throw "缓存文件不存在。"
+    }
+
+    $content = Get-Content $cacheFile -Encoding Byte -Raw | ForEach-Object { [System.Text.Encoding]::GetEncoding("ISO-8859-1").GetString($_) }
+
+    $regex = "https:\/\/.+?&auth_appid=webview_gacha&.+?authkey=.+?&game_biz=hk4e_(cn|global|os)"
+    $match = [regex]::Matches($content, $regex) | Select-Object -Last 1
+
+    if ($match) {
+        Write-Host "[找到链接] $($match.Value)"
+        return $match.Value
+    }
+
     return $null
 }
 
-function Get-LatestWebCachesFolder {
-    param([string]$GameDir)
+# --------------------------
+# 主流程
+# --------------------------
 
-    $webCaches = Join-Path $GameDir 'webCaches'
-    Write-CH "webCaches 路径：$webCaches" Cyan
-
-    if (-not (Test-Path $webCaches)) {
-        Write-CH "未找到 webCaches 目录，请确认游戏是否启动过。" Yellow
-        return $null
-    }
-
-    $subdirs = Get-ChildItem $webCaches -Directory -ErrorAction SilentlyContinue |
-               Sort-Object LastWriteTime -Descending
-
-    if (-not $subdirs) {
-        Write-CH "webCaches 目录为空。" Yellow
-        return $null
-    }
-
-    return $subdirs[0]
+$logPath = Get-LogPath
+if (!$logPath) {
+    Write-Host "`n[错误] 未找到原神日志文件，请确认游戏是否启动过。" -ForegroundColor Red
+    exit
 }
 
-Write-CH "=== 原神路径诊断脚本 ===`n" Green
+$logContent = Get-Content $logPath -Raw -Encoding UTF8
+$gameDir = Extract-GameDir $logContent
+if (!$gameDir) { exit }
 
-try {
-    # 1. 日志路径
-    $logPath = Get-LogPath
-    if (-not $logPath) { return }
-    Write-CH "日志路径：$logPath" Cyan
+$cacheVer = Get-LatestCacheVersion $gameDir
 
-    # 2. 游戏目录
-    $gameDir = Get-GameDirFromLog $logPath
-    if (-not $gameDir) { return }
-    Write-CH "解析出的游戏目录：$gameDir" Cyan
+$cacheFile = Join-Path $gameDir "webCaches\$cacheVer\Cache\Cache_Data\data_2"
+Write-Host "[最终缓存文件路径] $cacheFile"
 
-    # 3. 最新 webCaches 子目录
-    $latest = Get-LatestWebCachesFolder $gameDir
-    if (-not $latest) { return }
-    Write-CH "最新 webCaches 版本目录：$($latest.FullName)" Cyan
-
-    # 4. data_2 路径
-    $dataPath = Join-Path $latest.FullName 'Cache\Cache_Data\data_2'
-    Write-CH "data_2 路径：$dataPath" Cyan
-
-    if (Test-Path $dataPath) {
-        Write-CH "`ndata_2 找到，可用于祈愿记录解析。" Green
-    } else {
-        Write-CH "`ndata_2 文件不存在，请确保点开过祈愿记录界面。" Yellow
-    }
+if (!(Test-Path $cacheFile)) {
+    Write-Host "`n[错误] 未找到缓存文件: $cacheFile" -ForegroundColor Red
+    exit
 }
-catch {
-    Write-CH "运行出错：$_" Red
+
+$url = Extract-GachaLogUrl $cacheFile
+
+if ($url) {
+    Set-Clipboard -Value $url
+    Write-Host "`n==== 成功 ====" -ForegroundColor Green
+    Write-Host "祈愿链接已复制到剪贴板：" 
+    Write-Host $url -ForegroundColor Cyan
 }
+else {
+    Write-Host "`n[错误] 未找到祈愿记录链接，请确认已打开祈愿记录页面。" -ForegroundColor Red
+}
+
+Write-Host "`n=== 完成 ==="
