@@ -1,136 +1,104 @@
-chcp 65001 | Out-Null
+# Check-GenshinPath.ps1
+# 用于排查原神祈愿链接获取失败时的路径问题
+# 会输出：日志路径、解析到的 gameDir、webCaches 路径、最新缓存版本和 data_2 路径
+
+# --- 解决 PowerShell 中文显示问题（UTF-8） ---
+try {
+    chcp 65001 > $null 2>&1 | Out-Null
+} catch {}
+
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-[Console]::InputEncoding = [System.Text.Encoding]::UTF8
-$ErrorActionPreference = "Stop"
+$OutputEncoding = [System.Text.Encoding]::UTF8
+$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 
-Write-Host "=== 原神祈愿链接环境自检脚本 ===`n"
+Write-Host "=== 原神路径诊断脚本（Genshin Path Debug） ===`n"
 
-function Get-LogPath {
-    $basePath = Join-Path $env:USERPROFILE "AppData\LocalLow\miHoYo"
-    $globalLog = Join-Path $basePath "Genshin Impact\output_log.txt"
-    $cnLog     = Join-Path $basePath "原神\output_log.txt"
+try {
+    # 1. 构造日志路径（对应 getLogPath）
+    $userProfile = $env:USERPROFILE
+    $basePath   = Join-Path $userProfile 'AppData\LocalLow\miHoYo'
+    $globalLog  = Join-Path $basePath 'Genshin Impact\output_log.txt'
+    $chinaLog   = Join-Path $basePath '原神\output_log.txt'
 
-    Write-Host "尝试查找日志文件..."
-    Write-Host "Global 日志路径预期为: $globalLog"
-    Write-Host "国服日志路径预期为:   $cnLog`n"
+    Write-Host "[1] USERPROFILE: $userProfile"
+    Write-Host "[1] basePath   : $basePath"
 
-    if (Test-Path $globalLog) {
-        Write-Host "✅ 找到 Global 版本日志文件:"
-        Write-Host "    $globalLog`n"
-        return $globalLog
-    }
-    elseif (Test-Path $cnLog) {
-        Write-Host "✅ 找到 国服 版本日志文件:"
-        Write-Host "    $cnLog`n"
-        return $cnLog
-    }
-    else {
-        Write-Host "❌ 未在默认位置找到原神日志文件。"
-        Write-Host "   请确认游戏至少启动过一次。`n"
-        return $null
-    }
-}
-
-function Get-GameDirFromLog([string]$logPath) {
-    Write-Host "正在从日志中解析游戏目录 (gameDir)..."
-    try {
-        $content = Get-Content -Path $logPath -Raw -ErrorAction Stop
-    }
-    catch {
-        Write-Host "❌ 读取日志文件失败: $($_.Exception.Message)`n"
-        return $null
+    $logPath = $null
+    if (Test-Path -LiteralPath $globalLog) {
+        $logPath = $globalLog
+    } elseif (Test-Path -LiteralPath $chinaLog) {
+        $logPath = $chinaLog
     }
 
-    # 与你的 Node 代码保持一致的正则
-    $pattern = '([A-Z]:\\.+?\\(GenshinImpact_Data|YuanShen_Data))'
-    $match = [regex]::Match($content, $pattern)
+    if (-not $logPath) {
+        Write-Host "`n[结果] 未找到原神日志文件（output_log.txt）。"
+        Write-Host "请确认游戏至少启动过一次，然后再运行本脚本。"
+        return
+    }
+
+    Write-Host "`n[2] 日志文件路径:"
+    Write-Host "    $logPath"
+
+    # 2. 从日志中解析 gameDir（对应 extractGameDir）
+    $logContent = Get-Content -LiteralPath $logPath -Raw -Encoding UTF8
+
+    $regex = '([A-Z]:\\.+?\\(GenshinImpact_Data|YuanShen_Data))'
+    $match = [regex]::Match($logContent, $regex)
 
     if (-not $match.Success) {
-        Write-Host "❌ 无法从日志中解析出游戏目录。"
-        Write-Host "   建议：重新启动游戏几分钟后再运行本脚本。`n"
-        return $null
+        Write-Host "`n[结果] 无法从日志中解析游戏目录（gameDir）。"
+        Write-Host "请将本脚本输出与日志文件路径反馈给开发者。"
+        return
     }
 
     $gameDir = $match.Groups[1].Value
-    Write-Host "✅ 解析到的游戏目录 (gameDir):"
-    Write-Host "    $gameDir`n"
-    return $gameDir
+    Write-Host "`n[3] 解析到的游戏目录 gameDir:"
+    Write-Host "    $gameDir"
+
+    # 3. 计算 webCaches 路径（对应 getLatestCacheVersion 的前半部分）
+    $webCachesPath = Join-Path $gameDir 'webCaches'
+    $webCachesExists = Test-Path -LiteralPath $webCachesPath
+
+    Write-Host "`n[4] webCaches 目录信息:"
+    Write-Host "    路径   : $webCachesPath"
+    Write-Host "    是否存在: $webCachesExists"
+
+    if (-not $webCachesExists) {
+        Write-Host "`n[结果] 未找到 webCaches 目录。"
+        Write-Host "可能原因："
+        Write-Host "  - 游戏刚重装或移动过目录，还没完整启动一次；"
+        Write-Host "  - 使用了清理工具 / 手动删除了 webCaches；"
+        Write-Host "  - 解析到的 gameDir 不是当前正在使用的游戏安装目录。"
+        return
+    }
+
+    # 4. 找到最新的版本子目录（对应 getLatestCacheVersion 的后半部分）
+    $subdirs = Get-ChildItem -LiteralPath $webCachesPath -Directory -ErrorAction SilentlyContinue
+    if (-not $subdirs -or $subdirs.Count -eq 0) {
+        Write-Host "`n[结果] webCaches 目录中没有任何子文件夹（版本目录）。"
+        return
+    }
+
+    $latest = $subdirs | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    $cacheVersion = $latest.Name
+
+    Write-Host "`n[5] 最新 webCaches 版本目录:"
+    Write-Host "    名称     : $cacheVersion"
+    Write-Host "    完整路径 : $($latest.FullName)"
+    Write-Host "    修改时间 : $($latest.LastWriteTime)"
+
+    # 5. 计算 data_2 缓存文件路径（对应你的 Node 逻辑）
+    $cacheRoot    = Join-Path $webCachesPath $cacheVersion
+    $cacheFile    = Join-Path $cacheRoot 'Cache\Cache_Data\data_2'
+    $cacheExists  = Test-Path -LiteralPath $cacheFile
+
+    Write-Host "`n[6] 祈愿缓存文件 data_2 信息:"
+    Write-Host "    路径   : $cacheFile"
+    Write-Host "    是否存在: $cacheExists"
+
+    Write-Host "`n=== 诊断完成，如需反馈请截图以上所有内容发送给开发者 ==="
+
+} catch {
+    Write-Host "`n[错误] 脚本执行过程中出现异常："
+    Write-Host $_.Exception.Message
 }
-
-function Test-WebCaches([string]$gameDir) {
-    $webCachesPath = Join-Path $gameDir "webCaches"
-    Write-Host "预期 webCaches 路径为:"
-    Write-Host "    $webCachesPath"
-
-    if (-not (Test-Path $webCachesPath)) {
-        Write-Host "❌ 未找到 webCaches 目录。"
-        Write-Host "   可能原因："
-        Write-Host "   1) 游戏重装或移动路径后，旧日志仍指向旧目录；"
-        Write-Host "   2) 曾用清理工具/手动删除过 webCaches；"
-        Write-Host "   3) 当前账号/用户目录与实际玩游戏的账号不一致。`n"
-
-        $parent = Split-Path $gameDir -Parent
-        Write-Host "当前 gameDir 的上级目录内容如下（方便你截图给开发者）："
-        Write-Host "    $parent`n"
-        Get-ChildItem -Path $parent | Select-Object Name, FullName, LastWriteTime
-        Write-Host ""
-        return $null
-    }
-
-    Write-Host "✅ 找到 webCaches 目录。`n"
-
-    Write-Host "列出 webCaches 下的子目录（按时间倒序）："
-    $subdirs = Get-ChildItem -Path $webCachesPath -Directory | Sort-Object LastWriteTime -Descending
-
-    if ($subdirs.Count -eq 0) {
-        Write-Host "⚠ webCaches 目录中没有任何子文件夹。"
-        Write-Host "   说明可能游戏尚未生成缓存，请打开游戏并进入祈愿记录页面后再试。`n"
-        return $null
-    }
-
-    $index = 0
-    foreach ($dir in $subdirs) {
-        Write-Host ("[{0}] {1}  (LastWriteTime: {2})" -f $index, $dir.Name, $dir.LastWriteTime)
-        $index++
-        if ($index -ge 5) { break } # 只展示前几个，避免太长
-    }
-    Write-Host ""
-
-    $latest = $subdirs[0]
-    Write-Host "最新的缓存文件夹推断为:"
-    Write-Host "    $($latest.FullName)`n"
-
-    # 按你的 Electron 代码的路径规则推断 data_2
-    $cacheFile = Join-Path $latest.FullName "Cache\Cache_Data\data_2"
-    Write-Host "预计缓存文件 data_2 路径为:"
-    Write-Host "    $cacheFile"
-
-    if (Test-Path $cacheFile) {
-        Write-Host "✅ 找到缓存文件 data_2，可以正常读取祈愿链接（从缓存角度看正常）。`n"
-    }
-    else {
-        Write-Host "❌ 未找到缓存文件 data_2。"
-        Write-Host "   请确认："
-        Write-Host "   1) 进入游戏后，打开【祈愿记录】页面一次；"
-        Write-Host "   2) 然后关闭游戏，再重新运行本脚本；"
-        Write-Host "   3) 如果仍报错，请截图本窗口发给开发者排查。`n"
-    }
-}
-
-# 主流程
-$logPath = Get-LogPath
-if (-not $logPath) {
-    Write-Host "=== 自检结束（未找到日志）==="
-    exit
-}
-
-$gameDir = Get-GameDirFromLog -logPath $logPath
-if (-not $gameDir) {
-    Write-Host "=== 自检结束（无法解析游戏目录）==="
-    exit
-}
-
-Test-WebCaches -gameDir $gameDir
-
-Write-Host "=== 自检完成，如有问题请将整个窗口截图发送给开发者。==="
-Read-Host "按回车键退出..."
